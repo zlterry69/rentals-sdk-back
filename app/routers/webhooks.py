@@ -89,6 +89,14 @@ async def nowpayments_webhook(request: PaymentWebhookRequest, supabase = Depends
         elif request.payment_status == "confirming":
             new_payment_status = "CONFIRMING"
             logger.info(f"🔄 Pago confirmándose para reserva: {booking_public_id}")
+            
+        elif request.payment_status == "finished":
+            new_payment_status = "PAID"
+            # Buscar el status_id para BOOKING_CONFIRMED
+            status_result = supabase.table('process_status').select('id').eq('code', 'BOOKING_CONFIRMED').execute()
+            if status_result.data:
+                new_booking_status = status_result.data[0]['id']
+            logger.info(f"✅ Pago completado exitosamente para reserva: {booking_public_id}")
         
         # Actualizar la reserva en la base de datos
         update_data = {
