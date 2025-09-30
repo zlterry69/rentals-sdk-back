@@ -33,10 +33,19 @@ async def nowpayments_webhook(request: PaymentWebhookRequest, supabase = Depends
         # Extraer booking_id del order_id
         booking_public_id = None
         if request.order_id.startswith('ALQ-'):
-            # Formato: ALQ-bkg_xxxx-timestamp
+            # Formato: ALQ-bkg_xxxx-timestamp o ALQ-unt_xxxx-timestamp
             parts = request.order_id.split('-')
             if len(parts) >= 2:
-                booking_public_id = parts[1]
+                # Si es bkg_xxxx, usarlo directamente
+                if parts[1].startswith('bkg_'):
+                    booking_public_id = parts[1]
+                # Si es unt_xxxx, buscar la reserva más reciente para esa unidad
+                elif parts[1].startswith('unt_'):
+                    unit_public_id = parts[1]
+                    # Buscar la reserva más reciente para esta unidad
+                    booking_result = supabase.table('bookings').select('public_id').eq('units!unit_id.public_id', unit_public_id).order('created_at', desc=True).limit(1).execute()
+                    if booking_result.data:
+                        booking_public_id = booking_result.data[0]['public_id']
         elif request.order_id.startswith('bkg_'):
             # Formato: bkg_xxxx (direct booking public ID)
             booking_public_id = request.order_id

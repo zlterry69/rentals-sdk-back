@@ -4,7 +4,9 @@
 
 ### 1. Crear las tablas en Supabase
 
-Ejecuta el archivo SQL en el editor de Supabase:
+Ejecuta el archivo SQL en el editor de Supabase: 
+
+
 
 ```sql
 -- Ejecutar create_payment_tables.sql en Supabase SQL Editor
