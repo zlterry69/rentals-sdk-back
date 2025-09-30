@@ -518,3 +518,42 @@ async def delete_booking(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error deleting booking"
         )
+
+@router.get("/{booking_id}/status")
+async def get_booking_status(
+    booking_id: str,
+    current_user: dict = Depends(get_current_user),
+    supabase = Depends(get_supabase)
+):
+    """
+    Obtiene el estado actualizado de una reserva específica
+    """
+    try:
+        # Buscar la reserva
+        result = supabase.table('bookings').select(
+            'public_id, payment_status, status_id, process_status!inner(code, description)'
+        ).eq('public_id', booking_id).execute()
+        
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reserva no encontrada"
+            )
+        
+        booking = result.data[0]
+        
+        return {
+            "booking_id": booking['public_id'],
+            "payment_status": booking['payment_status'],
+            "booking_status": booking['process_status']['code'],
+            "status_description": booking['process_status']['description']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error obteniendo estado de reserva: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
