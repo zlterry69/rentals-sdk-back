@@ -1,0 +1,160 @@
+name: Deploy RENTALS-BACK
+
+on:
+  push:
+    branches:
+      - develop
+      - 'release/*'
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+          
+      - name: Run tests
+        run: |
+          pytest tests/ -v
+          
+      - name: Lint code
+        run: |
+          pip install flake8 black isort
+          flake8 app/ --max-line-length=88 --extend-ignore=E203,W503
+          black --check app/
+          isort --check-only app/
+
+  deploy-dev:
+    needs: test
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install CDK
+        run: npm install -g aws-cdk
+          
+      - name: Deploy infrastructure
+        working-directory: infra
+        run: |
+          npm install
+          npm run cdk deploy -- --context stage=dev --require-approval never
+          
+      - name: Deploy application
+        run: |
+          cd app
+          zip -r ../app.zip .
+          aws lambda update-function-code \
+            --function-name rentals-back-dev \
+            --zip-file fileb://app.zip
+
+  deploy-cert:
+    needs: test
+    if: github.ref == 'refs/heads/release/*'
+    runs-on: ubuntu-latest
+    environment: cert
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_CERT }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install CDK
+        run: npm install -g aws-cdk
+          
+      - name: Deploy infrastructure
+        working-directory: infra
+        run: |
+          npm install
+          npm run cdk deploy -- --context stage=cert --require-approval never
+          
+      - name: Deploy application
+        run: |
+          cd app
+          zip -r ../app.zip .
+          aws lambda update-function-code \
+            --function-name rentals-back-cert \
+            --zip-file fileb://app.zip
+
+  deploy-prod:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install CDK
+        run: npm install -g aws-cdk
+          
+      - name: Deploy infrastructure
+        working-directory: infra
+        run: |
+          npm install
+          npm run cdk deploy -- --context stage=prod --require-approval never
+          
+      - name: Deploy application
+        run: |
+          cd app
+          zip -r ../app.zip .
+          aws lambda update-function-code \
+            --function-name rentals-back-prod \
+            --zip-file fileb://app.zip

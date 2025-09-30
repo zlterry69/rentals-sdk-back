@@ -1,0 +1,47 @@
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+mangum==0.17.0
+requests
+
+# Pydantic and validation (compatible with supabase 2.20.0)
+pydantic>=2.11.0,<3.0.0
+pydantic-settings==2.1.0
+pydantic[email]
+
+# Database (compatible versions)
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+supabase>=2.20.0,<3.0.0
+
+# AWS
+boto3==1.34.0
+
+# Authentication & Security (compatible with supabase)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+PyJWT>=2.10.0,<3.0.0
+bcrypt==4.0.1
+
+# HTTP & Networking (compatible with supabase 2.20.0)
+httpx>=0.28.0,<0.29.0
+python-multipart==0.0.6
+anyio==3.7.1
+
+# Image & PDF processing
+Pillow==10.1.0
+qrcode[pil]==7.4.2
+reportlab==4.0.7
+
+# Utilities
+python-dotenv==1.0.0
+structlog==23.2.0
+
+# Testing dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+faker==20.1.0
+
+# AWS S3 for file storage
+boto3>=1.34.0,<2.0.0
