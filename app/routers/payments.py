@@ -926,3 +926,27 @@ async def create_payment_details(
     except Exception as e:
         logger.error(f"Error creating payment details: {str(e)}")
         raise HTTPException(status_code=500, detail="Error creating payment details")
+
+@router.get("/recent")
+async def get_recent_payments(
+    current_user: dict = Depends(get_current_user),
+    limit: int = Query(10, ge=1, le=50)
+):
+    """
+    Obtiene los pagos más recientes para el usuario actual
+    """
+    try:
+        # Por ahora, devolver datos de prueba para verificar que el endpoint funciona
+        return {
+            "payments": [],
+            "total": 0,
+            "limit": limit,
+            "message": "Endpoint funcionando correctamente"
+        }
+            
+    except Exception as e:
+        logger.error(f"Error fetching recent payments: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching recent payments"
+        )

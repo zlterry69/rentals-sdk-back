@@ -10,7 +10,7 @@ from app.routers import (
     health, auth, currencies, process_status, banks,
     payments, invoices
 )
-from app.routers import debtors, units, reviews, bookings, notifications, admin, payment_accounts, favorites, leases
+from app.routers import debtors, units, reviews, bookings, notifications, admin, payment_accounts, favorites, leases, webhooks
 from app.utils.logging import setup_logging
 
 # Setup structured logging
@@ -66,6 +66,7 @@ app.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])
 app.include_router(payment_accounts.router, prefix="/payment-accounts", tags=["Payment Accounts"])
 app.include_router(favorites.router, prefix="/favorites", tags=["Favorites"])
 app.include_router(leases.router, prefix="/leases", tags=["Leases"])
+app.include_router(webhooks.router, tags=["Webhooks"])
 
 # Global exception handler
 @app.exception_handler(Exception)
