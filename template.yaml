@@ -37,10 +37,10 @@ Resources:
           JWT_SECRET: 'mi_jwt_secret_super_seguro_2024'
           JWT_ALGORITHM: 'HS256'
           JWT_EXPIRATION: '3600'
-          RENTALS_FRONT_URL: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app'
+          RENTALS_FRONT_URL: 'https://rentals-sdk-front.vercel.app'
           RENTALS_BACK_URL: 'https://r3k8sn86cl.execute-api.us-east-1.amazonaws.com/Prod'
           RENTALS_SDK_URL: 'https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod'
-          CORS_ORIGINS: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod'
+          CORS_ORIGINS: 'https://rentals-sdk-front.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod'
           S3_BUCKET_NAME: 'hogar-peru-bucket'
       Events:
         Api:
@@ -70,7 +70,7 @@ Resources:
 Outputs:
   RentalsBackendApi:
     Description: 'API Gateway endpoint URL for HogarPeru Rentals Backend'
-    Value: 'https://api.rentals-backend.com'
+    Value: 'https://r3k8sn86cl.execute-api.us-east-1.amazonaws.com/Prod'
   
   RentalsBackendFunction:
     Description: 'HogarPeru Rentals Backend Lambda Function ARN'
