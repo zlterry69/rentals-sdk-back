@@ -115,8 +115,8 @@ async def get_units(
         # Build query based on role
         query = supabase.table('units').select('*')
         
-        # Admins and superadmins see all units, users see only their own
-        if current_user.get('role') not in ['admin', 'superadmin']:
+        # Only superadmins see all units, admins and users see only their own
+        if current_user.get('role') != 'superadmin':
             query = query.eq('owner_id', user_id)
         
         # Apply filters

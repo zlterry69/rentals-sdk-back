@@ -1,0 +1,32 @@
+# HogarPeru Rentals Backend - SAM Configuration
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "rentals-backend-prod"
+s3_bucket = "sam-deployments-prod-ACCOUNT_ID"
+s3_prefix = "rentals-backend-prod"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"prod\" SupabaseUrl=\"https://auwboqgfgmqmuqsguiaa.supabase.co\" FrontendUrl=\"https://rentals-sdk-front.vercel.app\" SdkUrl=\"https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod\""
+resolve_s3 = false
+disable_rollback = true
+image_repositories = []
+
+[dev]
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "rentals-backend-dev"
+s3_bucket = "sam-deployments-dev-ACCOUNT_ID"
+s3_prefix = "rentals-backend"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = [
+    "Environment=dev",
+    "SupabaseUrl=https://auwboqgfgmqmuqsguiaa.supabase.co",
+    "FrontendUrl=https://tu-frontend-dev.vercel.app",
+    "SdkUrl=https://tu-sdk-dev.vercel.app"
+]

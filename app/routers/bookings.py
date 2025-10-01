@@ -246,6 +246,11 @@ async def get_my_bookings(
         user_id = current_user.get('sub')
         offset = (page - 1) * limit
         
+        # Primero obtener el total de bookings del usuario
+        count_result = supabase.table('bookings').select('id', count='exact').eq('guest_user_id', user_id).execute()
+        total_bookings = count_result.count or 0
+        
+        # Luego obtener los bookings paginados
         result = supabase.table('bookings').select('''
             *,
             units!unit_id(
@@ -257,14 +262,14 @@ async def get_my_bookings(
                 code,
                 description
             )
-        ''').eq('guest_user_id', user_id).order('created_at', desc=True).range(offset, offset + limit - 1).execute()
+        ''').eq('guest_user_id', user_id).order('created_at', desc=True).order('updated_at', desc=True).range(offset, offset + limit - 1).execute()
         
         return {
             "bookings": result.data,
             "pagination": {
                 "page": page,
                 "limit": limit,
-                "total": len(result.data)
+                "total": total_bookings
             }
         }
         
