@@ -6,10 +6,18 @@ import logging
 from typing import Dict, Any
 from mangum import Mangum
 from app.main import app
+from app.database import get_supabase
 
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Force Supabase initialization for Lambda
+try:
+    get_supabase()
+    logger.info("Supabase client initialized in Lambda handler")
+except Exception as e:
+    logger.error(f"Failed to initialize Supabase client in Lambda handler: {str(e)}")
 
 # Create Mangum adapter for FastAPI
 handler = Mangum(app, lifespan="off")

@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # Application
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "production"
-    CORS_ORIGINS: List[str] = ["https://rentals-sdk-front.vercel.app", "https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod"]
+    CORS_ORIGINS: str = "https://rentals-sdk-front.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod"
     
     # AWS S3 Configuration
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -48,6 +48,11 @@ class Settings(BaseSettings):
 # Create settings instance
 settings = Settings()
 
-# Override CORS origins if environment variable is set
-if os.getenv("CORS_ORIGINS"):
-    settings.CORS_ORIGINS = os.getenv("CORS_ORIGINS").split(",")
+# Parse CORS origins from string to list
+def get_cors_origins():
+    """Get CORS origins as a list"""
+    cors_string = os.getenv("CORS_ORIGINS", settings.CORS_ORIGINS)
+    return [origin.strip() for origin in cors_string.split(",") if origin.strip()]
+
+# Override CORS origins
+settings.CORS_ORIGINS = get_cors_origins()
