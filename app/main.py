@@ -5,7 +5,7 @@ import structlog, uvicorn
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import init_db
+from app.database import init_db, get_supabase
 from app.routers import (
     health, auth, currencies, process_status, banks,
     payments, invoices
@@ -90,6 +90,8 @@ async def root():
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return {"message": "No favicon configured"}
+
+# Supabase initialization is handled in handler.py for Lambda
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
