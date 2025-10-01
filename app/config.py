@@ -21,8 +21,9 @@ class Settings(BaseSettings):
     RENTALS_SDK_API_KEY: str = "default-api-key"
     
     # URLs for payment redirects
-    RENTALS_FRONT_URL: str = "http://localhost:3000"
-    RENTALS_BACK_URL: str = "http://localhost:8000"
+    RENTALS_FRONT_URL: str = "https://rentals-sdk-front.vercel.app"
+    RENTALS_BACK_URL: str = "https://r3k8sn86cl.execute-api.us-east-1.amazonaws.com/Prod"
+    RENTALS_SDK_URL: str = "https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod"
     
     # Payment provider API keys
     MERCADOPAGO_ACCESS_TOKEN: str = ""
@@ -31,8 +32,8 @@ class Settings(BaseSettings):
     
     # Application
     LOG_LEVEL: str = "INFO"
-    ENVIRONMENT: str = "development"
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ENVIRONMENT: str = "production"
+    CORS_ORIGINS: List[str] = ["https://rentals-sdk-front.vercel.app", "https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod"]
     
     # AWS S3 Configuration
     AWS_ACCESS_KEY_ID: Optional[str] = None
