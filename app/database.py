@@ -43,9 +43,18 @@ async def close_db():
 
 
 def get_supabase() -> Client:
-    """Get Supabase client"""
+    """Get Supabase client, initializing on-demand if necessary"""
+    global _supabase_client
     if not _supabase_client:
-        raise RuntimeError("Supabase client not initialized")
+        try:
+            _supabase_client = create_client(
+                settings.SUPABASE_URL,
+                settings.SUPABASE_ANON_KEY
+            )
+            logger.info("Supabase client initialized on-demand")
+        except Exception as e:
+            logger.error("Failed to initialize Supabase client on-demand", error=str(e))
+            raise RuntimeError(f"Supabase client not initialized: {str(e)}")
     return _supabase_client
 
 
