@@ -811,6 +811,80 @@ async def download_receipt(
         logger.error(f"Error downloading receipt: {str(e)}")
         raise HTTPException(status_code=500, detail="Error downloading receipt")
 
+@router.get("/recent")
+async def get_recent_payments(
+    current_user: dict = Depends(get_current_user),
+    limit: int = Query(10, ge=1, le=50)
+):
+    """
+    Obtiene los pagos más recientes para el usuario actual
+    """
+    try:
+        supabase = get_supabase()
+        user_id = current_user.get('sub')
+        logger.info(f"🔍 Getting recent payments for user: {user_id}")
+        
+        # Obtener pagos recientes del usuario
+        # Primero obtener los IDs de las unidades que posee el usuario
+        owned_units_result = supabase.table('units').select('id').eq('owner_id', user_id).execute()
+        owned_unit_ids = [unit['id'] for unit in owned_units_result.data]
+        logger.info(f"🏠 User owns {len(owned_unit_ids)} units: {owned_unit_ids}")
+        
+        if not owned_unit_ids:
+            logger.info("⚠️ User has no units, returning empty payments")
+            return {
+                "payments": [],
+                "total": 0,
+                "limit": limit
+            }
+        
+        # Obtener debtors para las unidades del usuario
+        debtors_result = supabase.table('debtors').select('id, property_id, owner_id').in_('property_id', owned_unit_ids).execute()
+        logger.info(f"👥 Found {len(debtors_result.data)} debtors for user's units")
+        
+        # También obtener debtors donde el usuario es el owner (pagos propios)
+        user_debtors_result = supabase.table('debtors').select('id, property_id, owner_id').eq('owner_id', user_id).execute()
+        logger.info(f"👤 Found {len(user_debtors_result.data)} debtors where user is owner")
+        
+        # Combinar ambos conjuntos de debtors
+        all_debtor_ids = set()
+        all_debtor_ids.update([debtor['id'] for debtor in debtors_result.data])
+        all_debtor_ids.update([debtor['id'] for debtor in user_debtors_result.data])
+        
+        if not all_debtor_ids:
+            logger.info("⚠️ No debtors found for user")
+            return {
+                "payments": [],
+                "total": 0,
+                "limit": limit
+            }
+        
+        debtor_ids = list(all_debtor_ids)
+        logger.info(f"🔗 Total unique debtor IDs: {len(debtor_ids)}")
+        
+        # Obtener pagos para estos debtors
+        result = supabase.table('payments').select('''
+            *,
+            debtors!inner(full_name, name, email, phone, property_id, owner_id),
+            process_status!inner(code, description),
+            payment_details(sdk_response, payer_name, payer_email, payer_phone, payment_method_code, payment_method_name, transaction_id, external_reference, comments)
+        ''').in_('debtor_id', debtor_ids).order('created_at', desc=True).limit(limit).execute()
+        
+        logger.info(f"💰 Found {len(result.data)} recent payments")
+        
+        return {
+            "payments": result.data,
+            "total": len(result.data),
+            "limit": limit
+        }
+            
+    except Exception as e:
+        logger.error(f"Error fetching recent payments: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching recent payments"
+        )
+
 @router.get("/{payment_id}", response_model=PaymentResponse)
 async def get_payment(
     payment_id: str,
@@ -927,26 +1001,75 @@ async def create_payment_details(
         logger.error(f"Error creating payment details: {str(e)}")
         raise HTTPException(status_code=500, detail="Error creating payment details")
 
-@router.get("/recent")
-async def get_recent_payments(
-    current_user: dict = Depends(get_current_user),
-    limit: int = Query(10, ge=1, le=50)
+@router.delete("/{payment_id}")
+async def delete_payment(
+    payment_id: str,
+    current_user: dict = Depends(get_current_user)
 ):
-    """
-    Obtiene los pagos más recientes para el usuario actual
-    """
+    """Delete a payment by ID"""
     try:
-        # Por ahora, devolver datos de prueba para verificar que el endpoint funciona
-        return {
-            "payments": [],
-            "total": 0,
-            "limit": limit,
-            "message": "Endpoint funcionando correctamente"
-        }
+        supabase = get_supabase()
+        user_id = current_user.get('sub')
+        
+        # First, get the payment to check ownership
+        payment_result = supabase.table('payments').select('''
+            *,
+            debtors!inner(owner_id, property_id)
+        ''').eq('public_id', payment_id).execute()
+        
+        if not payment_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+        
+        payment = payment_result.data[0]
+        debtor = payment.get('debtors', {})
+        
+        # Check if user has permission to delete this payment
+        # User can delete if:
+        # 1. They are the property owner (debtor.owner_id == user_id)
+        # 2. They are the debtor (payment is for their own booking)
+        user_role = current_user.get('role', 'user')
+        
+        if user_role not in ['admin', 'superadmin']:
+            # Get user's owned units
+            owned_units_result = supabase.table('units').select('id').eq('owner_id', user_id).execute()
+            owned_unit_ids = [unit['id'] for unit in owned_units_result.data]
             
+            # Check if user owns the property or is the debtor
+            can_delete = (
+                debtor.get('owner_id') == user_id or  # User owns the property
+                debtor.get('property_id') in owned_unit_ids  # User owns the unit
+            )
+            
+            if not can_delete:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have permission to delete this payment"
+                )
+        
+        # Delete the payment
+        delete_result = supabase.table('payments').delete().eq('public_id', payment_id).execute()
+        
+        if not delete_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found or already deleted"
+            )
+        
+        logger.info(f"Payment {payment_id} deleted successfully by user {user_id}")
+        
+        return {
+            "message": "Payment deleted successfully",
+            "payment_id": payment_id
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching recent payments: {str(e)}")
+        logger.error(f"Error deleting payment: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error fetching recent payments"
+            detail="Error deleting payment"
         )

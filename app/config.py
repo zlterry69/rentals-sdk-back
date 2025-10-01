@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # Application
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "development"
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000", "http://localhost:5000"]
     
     # AWS S3 Configuration
     AWS_ACCESS_KEY_ID: Optional[str] = None
