@@ -38,9 +38,9 @@ Resources:
           JWT_ALGORITHM: 'HS256'
           JWT_EXPIRATION: '3600'
           RENTALS_FRONT_URL: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app'
-          RENTALS_BACK_URL: 'https://api.rentals-backend.com'
-          RENTALS_SDK_URL: 'https://api.sdk-nowpayments.com'
-          CORS_ORIGINS: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app,https://api.sdk-nowpayments.com'
+          RENTALS_BACK_URL: 'https://r3k8sn86cl.execute-api.us-east-1.amazonaws.com/Prod'
+          RENTALS_SDK_URL: 'https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod'
+          CORS_ORIGINS: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod'
           S3_BUCKET_NAME: 'hogar-peru-bucket'
       Events:
         Api:
