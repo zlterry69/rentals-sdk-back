@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'HogarPeru Rentals Backend API - FastAPI on AWS Lambda (Simplified)'
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Environment:
+      Variables:
+        ENVIRONMENT: production
+        LOG_LEVEL: INFO
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+
+Resources:
+  # Lambda Function
+  RentalsBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'rentals-backend-prod'
+      CodeUri: .
+      Handler: app.handler.lambda_handler
+      Description: 'HogarPeru Rentals Backend API'
+      MemorySize: 1024
+      Timeout: 30
+      Environment:
+        Variables:
+          SUPABASE_URL: 'https://auwboqgfgmqmuqsguiaa.supabase.co'
+          SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1d2JvcWdmZ21xbXVxc2d1aWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MzA3MDIsImV4cCI6MjA3NDUwNjcwMn0.yaxTq4F7o-6BL4s9bVJpa41WcaSkXqtR29tl-6XC668'
+          SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1d2JvcWdmZ21xbXVxc2d1aWFhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODkzMDcwMiwiZXhwIjoyMDc0NTA2NzAyfQ.CWlF9RvK79_O71n_gzJhMz5EbVYXEhT8TL9gsxg1Zuo'
+          SUPABASE_DB_URL: 'postgresql://postgres:D6eg0sc60.@db.auwboqgfgmqmuqsguiaa.supabase.co:5432/postgres'
+          JWT_SECRET: 'mi_jwt_secret_super_seguro_2024'
+          JWT_ALGORITHM: 'HS256'
+          JWT_EXPIRATION: '3600'
+          RENTALS_FRONT_URL: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app'
+          RENTALS_BACK_URL: 'https://api.rentals-backend.com'
+          RENTALS_SDK_URL: 'https://api.sdk-nowpayments.com'
+          CORS_ORIGINS: 'https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app,https://api.sdk-nowpayments.com'
+          S3_BUCKET_NAME: 'hogar-peru-bucket'
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+        RootApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+      Policies:
+        - S3CrudPolicy:
+            BucketName: 'hogar-peru-bucket'
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+
+  # S3 Bucket for invoices - Using existing bucket
+
+Outputs:
+  RentalsBackendApi:
+    Description: 'API Gateway endpoint URL for HogarPeru Rentals Backend'
+    Value: 'https://api.rentals-backend.com'
+  
+  RentalsBackendFunction:
+    Description: 'HogarPeru Rentals Backend Lambda Function ARN'
+    Value: 'arn:aws:lambda:us-east-1:ACCOUNT_ID:function:rentals-backend-prod'
+  
+  RentalsS3Bucket:
+    Description: 'S3 Bucket for invoices'
+    Value: 'hogar-peru-bucket'
