@@ -3,6 +3,7 @@ AWS Lambda handler for HogarPeru Rentals Backend
 """
 import json
 import logging
+import os
 from typing import Dict, Any
 from mangum import Mangum
 from app.main import app
@@ -11,6 +12,14 @@ from app.database import get_supabase
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Debug AWS credentials
+aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID', 'NOT_SET')
+aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', 'NOT_SET')
+logger.info(f"DEBUG AWS_ACCESS_KEY_ID: {aws_access_key[:10] if aws_access_key != 'NOT_SET' and len(aws_access_key) > 10 else aws_access_key}")
+logger.info(f"DEBUG AWS_SECRET_ACCESS_KEY: {aws_secret_key[:10] if aws_secret_key != 'NOT_SET' and len(aws_secret_key) > 10 else aws_secret_key}")
+logger.info(f"DEBUG AWS_ACCESS_KEY_ID length: {len(aws_access_key)}")
+logger.info(f"DEBUG AWS_SECRET_ACCESS_KEY length: {len(aws_secret_key)}")
 
 # Force Supabase initialization for Lambda
 try:

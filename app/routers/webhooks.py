@@ -53,6 +53,86 @@ async def nowpayments_webhook(request: PaymentWebhookRequest, supabase = Depends
         logger.info(f"🔍 Datos completos del webhook: {request.dict()}")
         logger.info(f"📦 Respuesta completa de NOWPayments que se guardará: {request.dict()}")
         
+        # Detectar si es un pago DEMO
+        if request.order_id.startswith('demo_'):
+            logger.info(f"🎓 Pago DEMO detectado, order_id: {request.order_id}")
+            
+            # Crear registro del pago DEMO en la base de datos
+            try:
+                from datetime import datetime
+                from app.utils.public_id import make_public_id
+                
+                # Obtener currency_id (default PEN)
+                currency_result = supabase.table('currencies').select('id').eq('code', 'PEN').execute()
+                currency_id = currency_result.data[0]['id'] if currency_result.data else None
+                
+                # Obtener status_id para PAID
+                status_result = supabase.table('payment_status').select('id').eq('code', 'PAID').execute()
+                paid_status_id = status_result.data[0]['id'] if status_result.data else None
+                
+                # Crear el registro del pago
+                payment_data = {
+                    'public_id': make_public_id('pay'),
+                    'debtor_id': None,  # Sin debtor para pagos DEMO
+                    'period': f"{datetime.now().year}-{datetime.now().month:02d}",
+                    'amount': request.amount,
+                    'currency_id': currency_id,
+                    'method': 'crypto',
+                    'payment_method': 'crypto',
+                    'payment_origin': 'NOWPayments DEMO',
+                    'status_id': paid_status_id,
+                    'reference': f"demo_{request.payment_id}",
+                    'invoice_id': f"demo_inv_{request.order_id}",
+                    'description': f"Pago DEMO con {request.crypto_currency.upper() if request.crypto_currency else 'ETH'}",
+                    'notes': f"DEMO - Payment ID: {request.payment_id} | Order ID: {request.order_id}",
+                    'payment_date': datetime.now().isoformat(),
+                    'created_at': datetime.now().isoformat(),
+                    'updated_at': datetime.now().isoformat()
+                }
+                
+                payment_result = supabase.table('payments').insert(payment_data).execute()
+                logger.info(f"✅ Pago DEMO guardado en BD: {payment_result.data}")
+                
+                # Crear payment_details
+                if payment_result.data:
+                    payment_id = payment_result.data[0]['id']
+                    details_data = {
+                        'public_id': make_public_id('pdt'),
+                        'payment_id': payment_id,
+                        'payer_name': 'DEMO User',
+                        'payer_email': 'demo@example.com',
+                        'payment_method_code': 'crypto',
+                        'payment_method_name': 'NOWPayments DEMO',
+                        'sdk_response': request.dict(),
+                        'transaction_id': request.payment_id,
+                        'external_reference': request.order_id,
+                        'comments': f"Pago DEMO procesado - {request.crypto_currency.upper() if request.crypto_currency else 'ETH'}: {request.crypto_amount}",
+                        'created_at': datetime.now().isoformat(),
+                        'updated_at': datetime.now().isoformat()
+                    }
+                    supabase.table('payment_details').insert(details_data).execute()
+                    logger.info(f"✅ Payment details DEMO creado")
+                
+                return {
+                    "status": "success",
+                    "message": "Webhook DEMO procesado correctamente",
+                    "order_id": request.order_id,
+                    "payment_status": request.payment_status,
+                    "payment_id": request.payment_id,
+                    "is_demo": True
+                }
+            except Exception as demo_error:
+                logger.error(f"❌ Error guardando pago DEMO: {str(demo_error)}")
+                # Aún así retornar éxito para el simulador
+                return {
+                    "status": "success",
+                    "message": "Webhook DEMO procesado (error al guardar en BD)",
+                    "order_id": request.order_id,
+                    "payment_status": request.payment_status,
+                    "is_demo": True,
+                    "error": str(demo_error)
+                }
+        
         # Extraer booking_id del order_id
         booking_public_id = None
         if request.order_id.startswith('ALQ-'):

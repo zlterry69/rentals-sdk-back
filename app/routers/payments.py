@@ -124,12 +124,37 @@ class PaymentStatusUpdate(BaseModel):
 
 # S3 configuration
 def get_s3_client():
-    return boto3.client(
-        's3',
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-        region_name=os.getenv('AWS_REGION', 'us-east-1')
+    """Get S3 client with credentials from environment or IAM role"""
+    # Try custom environment variables first (for Lambda with hardcoded credentials)
+    access_key = os.getenv('MY_AWS_ACCESS_KEY_ID') or os.getenv('AWS_ACCESS_KEY_ID')
+    secret_key = os.getenv('MY_AWS_SECRET_ACCESS_KEY') or os.getenv('AWS_SECRET_ACCESS_KEY')
+    region = os.getenv('AWS_REGION', 'us-east-1')
+    
+    # Check if we have valid explicit credentials (for local development or Lambda with hardcoded creds)
+    # Only use them if both are present and non-empty strings
+    has_valid_credentials = (
+        access_key and 
+        secret_key and
+        isinstance(access_key, str) and
+        isinstance(secret_key, str) and
+        len(access_key) > 10 and  # AWS access keys are 20 chars
+        len(secret_key) > 10  # AWS secret keys are 40 chars
     )
+    
+    if has_valid_credentials:
+        # Use explicit credentials (local development or Lambda with hardcoded creds)
+        print(f"Using explicit credentials for S3 in payments (key starts with: {access_key[:4]}...)")
+        return boto3.client(
+            's3',
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name=region
+        )
+    else:
+        # Use IAM role (Lambda/EC2 production)
+        # Do NOT pass any credential parameters - let boto3 use the IAM role
+        print("Using IAM role for S3 in payments (no explicit credentials)")
+        return boto3.client('s3', region_name=region)
 
 async def upload_to_s3(file: UploadFile, folder: str = "receipts") -> str:
     """Upload file to S3 and return the URL"""

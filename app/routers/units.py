@@ -100,6 +100,7 @@ class UnitUpdateRequest(BaseModel):
     longitude: Optional[float] = None
 
 # Endpoints
+@router.get("", response_model=List[UnitResponse])
 @router.get("/", response_model=List[UnitResponse])
 async def get_units(
     current_user: dict = Depends(get_current_user),
@@ -326,6 +327,7 @@ async def get_available_units(
             detail="Error fetching available units"
         )
 
+@router.post("", response_model=UnitResponse)
 @router.post("/", response_model=UnitResponse)
 async def create_unit(
     request: UnitRequest,

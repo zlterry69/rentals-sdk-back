@@ -27,7 +27,15 @@ class S3Service:
         try:
             # En Lambda/EC2, boto3 usa IAM roles automáticamente
             # En desarrollo local, usa credenciales explícitas
-            if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            # Verificar que las credenciales no solo existan, sino que tengan valores válidos
+            has_valid_credentials = (
+                settings.AWS_ACCESS_KEY_ID and 
+                settings.AWS_SECRET_ACCESS_KEY and
+                len(settings.AWS_ACCESS_KEY_ID) > 0 and
+                len(settings.AWS_SECRET_ACCESS_KEY) > 0
+            )
+            
+            if has_valid_credentials:
                 # Desarrollo local con credenciales explícitas
                 self.s3_client = boto3.client(
                     's3',
@@ -38,6 +46,14 @@ class S3Service:
                 logger.info("S3 service initialized with explicit credentials")
             else:
                 # Producción (Lambda/EC2) con IAM roles
+                # NO pasar ninguna credencial para forzar el uso del IAM role
+                import os
+                # Eliminar variables de entorno AWS si existen pero están vacías
+                if 'AWS_ACCESS_KEY_ID' in os.environ and not os.environ['AWS_ACCESS_KEY_ID']:
+                    del os.environ['AWS_ACCESS_KEY_ID']
+                if 'AWS_SECRET_ACCESS_KEY' in os.environ and not os.environ['AWS_SECRET_ACCESS_KEY']:
+                    del os.environ['AWS_SECRET_ACCESS_KEY']
+                
                 self.s3_client = boto3.client(
                     's3',
                     region_name=settings.AWS_REGION

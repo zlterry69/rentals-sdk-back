@@ -10,23 +10,39 @@ import uuid
 from botocore.exceptions import ClientError
 
 def get_s3_client():
-    """Get S3 client with credentials from environment"""
+    """Get S3 client with credentials from environment or IAM role"""
     from app.config import settings
     
-    # Use settings from Pydantic configuration
-    access_key = settings.AWS_ACCESS_KEY_ID
-    secret_key = settings.AWS_SECRET_ACCESS_KEY
+    # Try custom environment variables first (for Lambda with hardcoded credentials)
+    access_key = os.getenv('MY_AWS_ACCESS_KEY_ID') or settings.AWS_ACCESS_KEY_ID
+    secret_key = os.getenv('MY_AWS_SECRET_ACCESS_KEY') or settings.AWS_SECRET_ACCESS_KEY
     region = settings.AWS_REGION
     
-    if not access_key or not secret_key:
-        raise ValueError("AWS credentials not found in environment variables")
-    
-    return boto3.client(
-        's3',
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        region_name=region
+    # Check if we have valid explicit credentials (for local development or Lambda with hardcoded creds)
+    # Only use them if both are present and non-empty strings
+    has_valid_credentials = (
+        access_key and 
+        secret_key and
+        isinstance(access_key, str) and
+        isinstance(secret_key, str) and
+        len(access_key) > 10 and  # AWS access keys are 20 chars
+        len(secret_key) > 10  # AWS secret keys are 40 chars
     )
+    
+    if has_valid_credentials:
+        # Use explicit credentials (local development or Lambda with hardcoded creds)
+        print(f"Using explicit credentials for S3 (key starts with: {access_key[:4]}...)")
+        return boto3.client(
+            's3',
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name=region
+        )
+    else:
+        # Use IAM role (Lambda/EC2 production)
+        # Do NOT pass any credential parameters - let boto3 use the IAM role
+        print("Using IAM role for S3 (no explicit credentials)")
+        return boto3.client('s3', region_name=region)
 
 def generate_s3_key(folder: str, filename: str) -> str:
     """Generate S3 key for file upload"""
@@ -42,19 +58,24 @@ def upload_to_s3(file: UploadFile, s3_key: str) -> str:
         s3_client = get_s3_client()
         bucket_name = settings.S3_BUCKET_NAME
         
-        # Upload file
-        s3_client.upload_fileobj(
-            file.file,
-            bucket_name,
-            s3_key,
-            ExtraArgs={
-                'ContentType': file.content_type
-                # Sin ACL - el bucket ya tiene política pública
-            }
+        # Read file content as bytes
+        # This ensures the file is read correctly regardless of how it came through API Gateway
+        file_content = file.file.read()
+        
+        # Reset file pointer if needed for future reads
+        file.file.seek(0)
+        
+        # Upload file using put_object instead of upload_fileobj for better control
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=s3_key,
+            Body=file_content,
+            ContentType=file.content_type or 'application/octet-stream'
         )
         
         # Generate public URL
         public_url = f"https://{bucket_name}.s3.amazonaws.com/{s3_key}"
+        print(f"Successfully uploaded file to S3: {public_url}")
         return public_url
         
     except Exception as e:

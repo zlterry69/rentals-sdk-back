@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # Application
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "production"
-    CORS_ORIGINS: str = "https://rentals-sdk-front.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod"
+    CORS_ORIGINS: str = "https://rentals-sdk-front.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod,https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app"
     
     # AWS S3 Configuration
     AWS_ACCESS_KEY_ID: Optional[str] = None

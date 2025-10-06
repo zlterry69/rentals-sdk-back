@@ -5,12 +5,12 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "rentals-backend-prod"
-s3_bucket = "sam-deployments-prod-ACCOUNT_ID"
+s3_bucket = "hogar-peru-bucket"
 s3_prefix = "rentals-backend-prod"
 region = "us-east-1"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=\"prod\" SupabaseUrl=\"https://auwboqgfgmqmuqsguiaa.supabase.co\" FrontendUrl=\"https://rentals-sdk-front.vercel.app\" SdkUrl=\"https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod\""
+parameter_overrides = "Environment=\"prod\" SupabaseUrl=\"https://auwboqgfgmqmuqsguiaa.supabase.co\" FrontendUrl=\"https://rentals-sdk-front.vercel.app\" SdkUrl=\"https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod\" CORSOrigins=\"https://rentals-sdk-front.vercel.app,https://gxloif6egd.execute-api.us-east-1.amazonaws.com/Prod,https://rentals-sdk-front-git-front-local-terry-tejadas-projects.vercel.app\""
 resolve_s3 = false
 disable_rollback = true
 image_repositories = []
